@@ -15,7 +15,7 @@ int main(){
 
     std::cout << "Client: ";
     std::string message;
-    std::cin>>message;
+    std::getline(std::cin, message);
 
     send(clientSocket, message.c_str(), strlen(message.c_str()), 0);
 
