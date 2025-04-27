@@ -10,6 +10,9 @@ int main(){
         std::cout << "establishing conn error";
         exit(0);
     }
+
+    std::cout << "socket for server has been created" << std::endl;
+
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(8080);
@@ -25,8 +28,12 @@ int main(){
 
     int clientSocket = accept(serverSocket, nullptr, nullptr);
     char buffer[1024] = {0};
-    recv(clientSocket, buffer, sizeof(buffer), 0);
-    std::cout << "Client: " << buffer << std::endl;
+    ssize_t bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
+    while(bytes > 0) {
+        buffer[bytes] = '\0';
+        std::cout << "Client: " << buffer << std::endl;
+        bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
+    }
 
     close(serverSocket);
     return 0;

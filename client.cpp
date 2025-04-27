@@ -17,8 +17,14 @@ int main(){
     std::string message;
     std::getline(std::cin, message);
 
-    send(clientSocket, message.c_str(), strlen(message.c_str()), 0);
+    ssize_t bytesSent = send(clientSocket, message.c_str(), strlen(message.c_str()), 0);
 
+    while (bytesSent > 0) {
+        std::cout << "Client: ";
+        std::getline(std::cin, message);
+
+        bytesSent = send(clientSocket, message.c_str(), message.length(), 0);
+    }
     close(clientSocket);
     return 0;
 }
