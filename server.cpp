@@ -3,15 +3,17 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#define SERV_MSG "[SERVER] "
+
 int main(){
     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (serverSocket < 0) {
-        std::cout << "establishing conn error";
+        std::cout << SERV_MSG << "establishing conn error";
         exit(0);
     }
 
-    std::cout << "socket for server has been created" << std::endl;
+    std::cout << SERV_MSG << "socket for server has been created" << std::endl;
 
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
@@ -20,7 +22,7 @@ int main(){
 
     int ret = bind(serverSocket, (struct sockaddr *) &serverAddress, sizeof(serverAddress));
     if (ret < 0) {
-        std::cout << "error binding conn" << std::endl;
+        std::cout << SERV_MSG << "error binding conn" << std::endl;
         return -1;
     }
 
@@ -34,6 +36,8 @@ int main(){
         std::cout << "Client: " << buffer << std::endl;
         bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
     }
+
+    std::cout << SERV_MSG << "client disconnected" << std::endl;
 
     close(serverSocket);
     return 0;
