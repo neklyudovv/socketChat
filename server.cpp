@@ -20,6 +20,8 @@ int main(){
     serverAddress.sin_port = htons(8080);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
 
+    int opt = 1;
+    setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     int ret = bind(serverSocket, (struct sockaddr *) &serverAddress, sizeof(serverAddress));
     if (ret < 0) {
         std::cout << SERV_MSG << "error binding conn" << std::endl;
@@ -27,17 +29,52 @@ int main(){
     }
 
     listen(serverSocket, 5);
+    std::vector<int> clients;
 
-    int clientSocket = accept(serverSocket, nullptr, nullptr);
-    char buffer[1024] = {0};
-    ssize_t bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
-    while(bytes > 0) {
-        buffer[bytes] = '\0';
-        std::cout << "Client: " << buffer << std::endl;
-        bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
+    fd_set allFds, activeFds;
+    FD_ZERO(&allFds);
+    FD_SET(serverSocket, &allFds);
+    int maxFd = serverSocket;
+
+    while(true){
+        activeFds = allFds;
+
+        int sel = select(maxFd+1, &activeFds, nullptr, nullptr, nullptr);
+        if(sel < 0){
+            std::cout << SERV_MSG << "select error" << std::endl;
+            break;
+        }
+        for(int fd=0; fd<=maxFd; fd++) {
+            if(FD_ISSET(fd, &activeFds)) {
+                if (fd == serverSocket) {
+                    int clientSocket = accept(serverSocket, nullptr, nullptr);
+                    if (clientSocket > 0) {
+                        FD_SET(clientSocket, &allFds);
+                        clients.push_back(clientSocket);
+                        if (clientSocket > maxFd)
+                            maxFd = clientSocket;
+                        std::cout << SERV_MSG << "client " << clientSocket << " connected" << std::endl;
+                    }
+                } else {
+                    char buffer[1024] = {0};
+                    ssize_t bytes = recv(fd, buffer, sizeof(buffer), 0);
+                    if (bytes <= 0) {
+                        std::cout << SERV_MSG << "client " << fd << " disconnected" << std::endl;
+                        close(fd);
+                        FD_CLR(fd, &allFds);
+                        clients.erase(
+                                std::remove(clients.begin(), clients.end(), fd),
+                                clients.end());
+                    } else {
+                        buffer[bytes] = '\0';
+                        std::cout << "Client " << fd << ": " << buffer << std::endl;
+                    }
+                }
+            }
+        }
     }
-
-    std::cout << SERV_MSG << "client disconnected" << std::endl;
+    for(int client:clients)
+        close(client);
 
     close(serverSocket);
     return 0;
