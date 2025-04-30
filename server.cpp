@@ -68,6 +68,10 @@ int main(){
                     } else {
                         buffer[bytes] = '\0';
                         std::cout << "Client " << fd << ": " << buffer << std::endl;
+
+                        for(int clientFd:clients)
+                            if(clientFd != fd)
+                                send(clientFd, buffer, bytes, 0);
                     }
                 }
             }
