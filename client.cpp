@@ -25,7 +25,6 @@ void receiveMsg(int clientSocket){
 void sendMsg(int clientSocket){
     std::string message;
     while(run) {
-        std::cout << "You: ";
         std::getline(std::cin, message);
         ssize_t bytesSent = send(clientSocket, message.c_str(), message.size(), 0);
         if (bytesSent <= 0) {
