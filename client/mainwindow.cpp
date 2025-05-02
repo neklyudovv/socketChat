@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+#include <QDebug>
 
 MainWindow::MainWindow(int clientSocket, QWidget *parent)
     : QMainWindow(parent)
@@ -42,6 +43,7 @@ void MainWindow::sendMsg() {
 MainWindow::~MainWindow()
 {
     run = 0;
+    ::shutdown(clientSocket, SHUT_RD);
     receive.join();
     ::close(clientSocket);
     delete ui;
