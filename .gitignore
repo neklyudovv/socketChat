@@ -3,6 +3,22 @@
 build/
 cmake-build-debug/
 
+# Qt
+*.autosave
+*.pro.user*
+*.qbs.user*
+*.creator.*
+*.creator.user*
+*.user
+*.user.*
+*.qmlproject.user*
+*.qmlproject.user.*
+*.kate-swp
+cmake-build-*/
+*.moc
+*.rcc
+*.qrc
+
 # Prerequisites
 *.d
 
