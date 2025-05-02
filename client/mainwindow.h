@@ -23,11 +23,17 @@ public:
     MainWindow(int clientSocket, QWidget *parent = nullptr);
     ~MainWindow();
 
+signals:
+    void newMsgRcv(const QString& message);
+
 private:
     Ui::MainWindow *ui;
     int clientSocket;
+    bool run = 1;
+    std::thread receive;
 
 private slots:
     void sendMsg();
+    void receiveMsg();
 };
 #endif // MAINWINDOW_H
