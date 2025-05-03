@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <map>
 
 #define SERV_MSG "[SERVER] "
 
@@ -29,7 +30,7 @@ int main(){
     }
 
     listen(serverSocket, 5);
-    std::vector<int> clients;
+    std::map<int, std::string> clients;
 
     fd_set allFds, activeFds;
     FD_ZERO(&allFds);
@@ -50,34 +51,46 @@ int main(){
                     int clientSocket = accept(serverSocket, nullptr, nullptr);
                     if (clientSocket > 0) {
                         FD_SET(clientSocket, &allFds);
-                        clients.push_back(clientSocket);
+                        clients[clientSocket] = ""; // no name yet
                         if (clientSocket > maxFd)
                             maxFd = clientSocket;
-                        std::cout << SERV_MSG << "client " << clientSocket << " connected" << std::endl;
+                        std::cout << SERV_MSG << "client " << clientSocket << " connected, waiting for name" << std::endl;
                     }
                 } else {
                     char buffer[1024] = {0};
                     ssize_t bytes = recv(fd, buffer, sizeof(buffer), 0);
                     if (bytes <= 0) {
-                        std::cout << SERV_MSG << "client " << fd << " disconnected" << std::endl;
+                        std::cout << SERV_MSG << "client " << fd << "(" << clients[fd] << ") disconnected" << std::endl;
                         close(fd);
                         FD_CLR(fd, &allFds);
-                        clients.erase(
-                                std::remove(clients.begin(), clients.end(), fd),
-                                clients.end());
+                        clients.erase(fd);
                     } else {
                         buffer[bytes] = '\0';
-                        std::cout << "Client " << fd << ": " << buffer << std::endl;
-
-                        for(int clientFd:clients)
+                        if (clients[fd].empty()) {
+                            std::string name(buffer);
+                            if (name.empty() || name.find_first_not_of(" \t\n\r") == std::string::npos) {
+                                std::string msg = "Invalid name. Connection refused.\n";
+                                send(fd, msg.c_str(), msg.size(), 0);
+                                close(fd);
+                                FD_CLR(fd, &allFds);
+                                clients.erase(fd);
+                            } else {
+                                clients[fd] = name;
+                                std::cout << SERV_MSG << "client " << fd << " set name: " << name << std::endl;
+                            }
+                            continue;
+                        }
+                        std::string msg = clients[fd] + ": " + buffer;
+                        std::cout << msg << std::endl;
+                        for (const auto& [clientFd, name] : clients)
                             if(clientFd != fd)
-                                send(clientFd, buffer, bytes, 0);
+                                send(clientFd, msg.c_str(), msg.size(), 0);
                     }
                 }
             }
         }
     }
-    for(int client:clients)
+    for (const auto& [client, name]:clients)
         close(client);
 
     close(serverSocket);
