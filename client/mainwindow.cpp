@@ -9,9 +9,6 @@ MainWindow::MainWindow(int clientSocket, QWidget *parent)
     ui->setupUi(this);
     connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::sendMsg);
     receive = std::thread(&MainWindow::receiveMsg, this);
-    connect(this, &MainWindow::newMsgRcv, this, [this](const QString& message) {
-        ui->textBrowser->append("Client: " + message + "\n");
-    });
 }
 
 void MainWindow::receiveMsg(){
@@ -23,7 +20,7 @@ void MainWindow::receiveMsg(){
             run = 0;
         } else{
             buffer[bytes] = '\0';
-            ui->textBrowser->append("Client: " + QString::fromUtf8(buffer));
+            ui->textBrowser->append(QString::fromUtf8(buffer));
         }
     }
 }
