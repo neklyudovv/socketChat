@@ -23,9 +23,6 @@ public:
     MainWindow(int clientSocket, QWidget *parent = nullptr);
     ~MainWindow();
 
-signals:
-    void newMsgRcv(const QString& message);
-
 private:
     Ui::MainWindow *ui;
     int clientSocket;
