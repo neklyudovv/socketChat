@@ -45,51 +45,59 @@ int main(){
             std::cout << SERV_MSG << "select error" << std::endl;
             break;
         }
+
         for(int fd=0; fd<=maxFd; fd++) {
-            if(FD_ISSET(fd, &activeFds)) {
-                if (fd == serverSocket) {
-                    int clientSocket = accept(serverSocket, nullptr, nullptr);
-                    if (clientSocket > 0) {
-                        FD_SET(clientSocket, &allFds);
-                        clients[clientSocket] = ""; // no name yet
-                        if (clientSocket > maxFd)
-                            maxFd = clientSocket;
-                        std::cout << SERV_MSG << "client " << clientSocket << " connected, waiting for name" << std::endl;
-                    }
-                } else {
-                    char buffer[1024] = {0};
-                    ssize_t bytes = recv(fd, buffer, sizeof(buffer), 0);
-                    if (bytes <= 0) {
-                        std::cout << SERV_MSG << "client " << fd << "(" << clients[fd] << ") disconnected" << std::endl;
-                        close(fd);
-                        FD_CLR(fd, &allFds);
-                        clients.erase(fd);
-                    } else {
-                        buffer[bytes] = '\0';
-                        if (clients[fd].empty()) {
-                            std::string name(buffer);
-                            if (name.empty() || name.find_first_not_of(" \t\n\r") == std::string::npos) {
-                                std::string msg = "Invalid name. Connection refused.\n";
-                                send(fd, msg.c_str(), msg.size(), 0);
-                                close(fd);
-                                FD_CLR(fd, &allFds);
-                                clients.erase(fd);
-                            } else {
-                                clients[fd] = name;
-                                std::cout << SERV_MSG << "client " << fd << " set name: " << name << std::endl;
-                            }
-                            continue;
-                        }
-                        std::string msg = clients[fd] + ": " + buffer;
-                        std::cout << msg << std::endl;
-                        for (const auto& [clientFd, name] : clients)
-                            if(clientFd != fd)
-                                send(clientFd, msg.c_str(), msg.size(), 0);
-                    }
-                }
+            if(!FD_ISSET(fd, &activeFds))
+                continue;
+
+            if (fd == serverSocket) {
+                int clientSocket = accept(serverSocket, nullptr, nullptr);
+                if (clientSocket <= 0)
+                    continue;
+
+                FD_SET(clientSocket, &allFds);
+                clients[clientSocket] = ""; // no name yet
+                if (clientSocket > maxFd)
+                    maxFd = clientSocket;
+                std::cout << SERV_MSG << "client " << clientSocket << " connected, waiting for name" << std::endl;
+                continue;
             }
+
+            char buffer[1024] = {0};
+            ssize_t bytes = recv(fd, buffer, sizeof(buffer), 0);
+            if (bytes <= 0) {
+                std::cout << SERV_MSG << "client " << fd << "(" << clients[fd] << ") disconnected" << std::endl;
+                close(fd);
+                FD_CLR(fd, &allFds);
+                clients.erase(fd);
+                continue;
+            }
+            buffer[bytes] = '\0';
+
+            if (clients[fd].empty()) {
+                std::string name(buffer);
+                if (name.empty() || name.find_first_not_of(" \t\n\r") == std::string::npos) {
+                    std::string msg = "Invalid name. Connection refused.\n";
+                    send(fd, msg.c_str(), msg.size(), 0);
+                    close(fd);
+                    FD_CLR(fd, &allFds);
+                    clients.erase(fd);
+                } else {
+                    clients[fd] = name;
+                    std::cout << SERV_MSG << "client " << fd << " set name: " << name << std::endl;
+                }
+                continue;
+            }
+
+            std::string msg = clients[fd] + ": " + buffer;
+            std::cout << msg << std::endl;
+
+            for (const auto& [clientFd, name] : clients)
+                if(clientFd != fd)
+                    send(clientFd, msg.c_str(), msg.size(), 0);
         }
     }
+
     for (const auto& [client, name]:clients)
         close(client);
 
