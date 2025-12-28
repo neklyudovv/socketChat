@@ -32,5 +32,8 @@ private:
 private slots:
     void sendMsg();
     void receiveMsg();
+
+signals:
+    void newMessageReceived(QString msg);
 };
 #endif // MAINWINDOW_H

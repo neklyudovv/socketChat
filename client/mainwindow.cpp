@@ -8,6 +8,7 @@ MainWindow::MainWindow(int clientSocket, QWidget *parent)
 {
     ui->setupUi(this);
     connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::sendMsg);
+    connect(this, &MainWindow::newMessageReceived, ui->textBrowser, &QTextBrowser::append);
     receive = std::thread(&MainWindow::receiveMsg, this);
 }
 
@@ -16,11 +17,11 @@ void MainWindow::receiveMsg(){
     while(run){
         ssize_t bytes = recv(clientSocket, buffer, sizeof(buffer), 0);
         if(bytes <= 0) {
-            ui->textBrowser->append(CLNT_MSG "lost conn\n");
+            emit newMessageReceived(CLNT_MSG "lost conn\n");
             run = 0;
         } else{
             buffer[bytes] = '\0';
-            ui->textBrowser->append(QString::fromUtf8(buffer));
+            emit newMessageReceived(QString::fromUtf8(buffer));
         }
     }
 }
